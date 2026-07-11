@@ -8,13 +8,9 @@ const required = [
   "PINECONE_API_KEY",
   "PINECONE_INDEX",
   "PINECONE_HOST",
-  "NEXT_PUBLIC_FIREBASE_API_KEY",
-  "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
-  "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-  "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
-  "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
-  "NEXT_PUBLIC_FIREBASE_APP_ID",
-  "FIREBASE_SERVICE_ACCOUNT",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
 ] as const;
 
 type EnvKey = (typeof required)[number];
@@ -46,19 +42,15 @@ export const env = {
   get pineconeHost() {
     return getEnv("PINECONE_HOST");
   },
-  get firebaseServiceAccount() {
-    return getEnv("FIREBASE_SERVICE_ACCOUNT");
+  get supabaseServiceRoleKey() {
+    return getEnv("SUPABASE_SERVICE_ROLE_KEY");
   },
 };
 
-/** Client-safe Firebase config (NEXT_PUBLIC_* vars). */
-export const firebaseClientConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
+/** Client-safe Supabase config (NEXT_PUBLIC_* vars). */
+export const supabaseClientConfig = {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
 };
 
 export function isEnvConfigured(): boolean {

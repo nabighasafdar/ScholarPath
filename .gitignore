@@ -39,6 +39,9 @@ firebase-service-account.json
 # vercel
 .vercel
 
+# local-only UI reference material (mockups, screenshots, etc.)
+/UI-Reference
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

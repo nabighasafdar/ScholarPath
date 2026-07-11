@@ -1,30 +1,27 @@
 /**
- * Create the ScholarPath Pinecone serverless index (Phase 0).
- * Run with: npx tsx --env-file=.env.local scripts/create-pinecone-index.ts
+ * Create the ScholarPath Pinecone integrated-embedding index (Phase 0).
+ * Run with: npm run create-index
  *
- * Defaults to 384 dims (free local @xenova/transformers embeddings).
- * Override: PINECONE_DIMENSIONS=1536 for OpenAI embeddings.
+ * Uses Pinecone's integrated inference: text goes in, embeddings come out server-side,
+ * so no separate embedding provider or step is needed for ingest/query.
  */
 
 import { Pinecone } from "@pinecone-database/pinecone";
 
 const INDEX_NAME = process.env.PINECONE_INDEX ?? "scholarpath-abstracts";
-const DIMENSIONS = Number(process.env.PINECONE_DIMENSIONS ?? "384");
+const EMBED_MODEL = process.env.PINECONE_EMBED_MODEL ?? "llama-text-embed-v2";
+const DIMENSION = Number(process.env.PINECONE_DIMENSIONS ?? "1024");
 const METRIC = "cosine" as const;
 const CLOUD = (process.env.PINECONE_CLOUD ?? "aws") as "aws" | "gcp" | "azure";
 const REGION = process.env.PINECONE_REGION ?? "us-east-1";
+const TEXT_FIELD = "text";
 
 async function main() {
   const apiKey = process.env.PINECONE_API_KEY;
-  if (!apiKey || apiKey.includes("your-key-here")) {
+  if (!apiKey || apiKey.includes("your-")) {
     console.error(
       "Set a real PINECONE_API_KEY in .env.local before running this script.",
     );
-    process.exit(1);
-  }
-
-  if (DIMENSIONS !== 384 && DIMENSIONS !== 1536) {
-    console.error("PINECONE_DIMENSIONS must be 384 or 1536.");
     process.exit(1);
   }
 
@@ -33,29 +30,23 @@ async function main() {
   const found = existing.indexes?.find((idx) => idx.name === INDEX_NAME);
 
   if (found) {
-    const dim = found.dimension;
-    console.log(`Index "${INDEX_NAME}" already exists (dimension=${dim}).`);
-    if (dim !== DIMENSIONS) {
-      console.warn(
-        `Warning: existing dimension ${dim} != requested ${DIMENSIONS}. Recreate the index if this is wrong.`,
-      );
-    }
+    console.log(`Index "${INDEX_NAME}" already exists (dimension=${found.dimension}).`);
     return;
   }
 
   console.log(
-    `Creating serverless index "${INDEX_NAME}" (dims=${DIMENSIONS}, metric=${METRIC}, ${CLOUD}/${REGION})...`,
+    `Creating integrated-embedding index "${INDEX_NAME}" (model=${EMBED_MODEL}, dims=${DIMENSION}, metric=${METRIC}, ${CLOUD}/${REGION})...`,
   );
 
-  await pc.createIndex({
+  await pc.createIndexForModel({
     name: INDEX_NAME,
-    dimension: DIMENSIONS,
-    metric: METRIC,
-    spec: {
-      serverless: {
-        cloud: CLOUD,
-        region: REGION,
-      },
+    cloud: CLOUD,
+    region: REGION,
+    embed: {
+      model: EMBED_MODEL,
+      fieldMap: { text: TEXT_FIELD },
+      metric: METRIC,
+      dimension: DIMENSION,
     },
     waitUntilReady: true,
   });

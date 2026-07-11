@@ -20,7 +20,8 @@ The throughline is that every stage feeds the next: the idea's uniqueness score 
 
 ```
 2-sentence idea
-    → Pinecone integrated embed + nearest-neighbor search
+    → live search: arXiv + Semantic Scholar (in parallel)
+    → Pinecone standalone embed (llama-text-embed-v2) on idea + candidate abstracts
     → uniquenessScore = 100 − avg(top-5 cosine similarity) × 100
     → Groq (via LangChain) explains overlap vs novelty
     → student iterates
@@ -36,19 +37,17 @@ The throughline is that every stage feeds the next: the idea's uniqueness score 
 | **Next.js 14** (App Router + Server Actions) | UI + server-side AI calls (keys never reach the browser) |
 | **Supabase** | Google Auth + Postgres (profiles, sessions, scores) with RLS |
 | **LangChain** + **Groq** (`llama-3.3-70b-versatile`) | Scoring explanations, coaching, checklists |
-| **Pinecone** | Vector DB over paper abstracts — integrated embedding (`llama-text-embed-v2`, 1024-dim, cosine, field map `text`) |
-| **Semantic Scholar + arXiv APIs** | Free, key-less sources for the abstract corpus |
+| **Pinecone** | Standalone embedding API (`pc.inference.embed`, `llama-text-embed-v2`) for idea-vs-abstract cosine similarity — no pre-built corpus index required for uniqueness scoring |
+| **Semantic Scholar + arXiv APIs** | Live, per-query literature search (optional `SEMANTIC_SCHOLAR_API_KEY` raises S2 rate limits) |
 | **Composio** *(planned)* | Tool-integration layer for connecting third-party services (Google Calendar, Gmail, Drive, and more over time) — starting with deadline reminders, expanding as new features need external tools |
 
 Paper drafts are stored as text in Postgres (no file Storage required for MVP).
 
 ## Status
 
-**Built:** project scaffold and env validation; Google sign-in via Supabase (login page, OAuth callback, session-refreshing middleware, protected dashboard route); the Postgres schema and RLS policies for profiles/sessions/scores; the Pinecone integrated-embedding index setup script; the Groq/LangChain client used for all model calls.
+**Built:** project scaffold and env validation; email/password auth via Supabase; marketing landing; Postgres schema/RLS; Groq/LangChain client; **full early pipeline** — uniqueness scoring, conference matching, outline builder, section coaching, readiness check, and in-app deadline milestones.
 
-**In progress:** the full tabbed dashboard UI (Overview · Phases · Conferences · Uniqueness · Tech stack) — right now `/dashboard` is a placeholder shell, not the real product surface.
-
-**Not started yet:** abstract corpus ingestion, the uniqueness scoring engine (the MVP centerpiece), conference matching, outline building, section coaching, submission readiness checks, deadline reminders, and billing/deploy polish. `lib/uniqueness/` and `lib/conferences/` are empty stubs; `scripts/ingest.ts` is a no-op placeholder.
+**Still later:** Composio email/calendar reminders, Stripe billing, Google OAuth re-enable, deploy polish, richer tabbed workspace UI.
 
 ---
 
@@ -105,7 +104,7 @@ Ingestion upserts `{ text: abstract, title, year, url, ... }` — Pinecone embed
 2. **Authentication → Providers → Google**: enable and paste OAuth Client ID/Secret from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 3. Add redirect URL: `http://localhost:3000/auth/callback`
 4. **Project Settings → API**: copy Project URL, `anon` key, and `service_role` key
-5. Run the migration: **SQL Editor** → paste [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) → Run
+5. Run the migrations: **SQL Editor** → paste [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql), then [`supabase/migrations/002_pipeline.sql`](supabase/migrations/002_pipeline.sql) → Run each.
 6. Fill `.env.local`:
 
 ```bash
@@ -120,7 +119,9 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # server only — never expose
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) → **Sign in** → Google OAuth → `/dashboard`.
+Open [http://localhost:3000](http://localhost:3000) → **Sign in** (email/password or Google if configured) → `/dashboard`.
+
+**Important:** also run [`supabase/migrations/002_pipeline.sql`](supabase/migrations/002_pipeline.sql) so venue/outline/coaching/readiness/deadline columns exist.
 
 ---
 
@@ -141,21 +142,27 @@ Open [http://localhost:3000](http://localhost:3000) → **Sign in** → Google O
 ```
 app/
   page.tsx                 # Landing → login / dashboard
-  login/page.tsx           # Google sign-in
-  auth/callback/route.ts   # OAuth code exchange
-  dashboard/page.tsx       # Protected shell entry (placeholder, not the real UI yet)
+  login/page.tsx           # Email/password sign-in
+  signup/page.tsx          # Email/password sign-up
+  auth/callback/route.ts   # OAuth code exchange (Google disabled for now)
+  auth/confirm/route.ts    # Email confirmation
+  dashboard/page.tsx       # Protected stage map
+  dashboard/uniqueness/    # Uniqueness scoring UI + server action
 components/
-  auth/                    # AuthProvider, GoogleSignInButton, SignOutButton
+  auth/                    # AuthProvider, SignInForm, SignUpForm, SignOutButton
+  uniqueness/              # UniquenessForm
+  marketing/               # Landing sections
+  ui/                      # Design-system primitives
 lib/
   env.ts                   # Server-side env validation
   supabase/                # Browser, server, and admin clients
   llm/                     # Groq / LangChain helpers
-  uniqueness/              # Scoring + explanation engine (not yet implemented)
+  uniqueness/              # Live search + embed + score + explain
   conferences/             # Venue matching (not yet implemented)
 supabase/migrations/       # Postgres schema + RLS
 scripts/
-  ingest.ts                # Corpus ingestion (not yet implemented)
-  create-pinecone-index.ts
+  ingest.ts                # Optional bulk corpus (unused by uniqueness)
+  create-pinecone-index.ts # Optional integrated-embedding index
 middleware.ts              # Session refresh + route protection
 ```
 
@@ -171,17 +178,12 @@ RLS: users can only read/write their own rows.
 
 ## What's next
 
-Roughly in build order, since each depends on the previous one having real data or a working session model to attach to:
+- **Composio deadline delivery**: push Gmail/Calendar reminders instead of in-app milestones only.
+- **Richer workspace UI**: shared dashboard layout, attempt history, editable outline persistence UX.
+- **Google OAuth**: re-enable the existing callback path.
+- **Polish & deploy**: Stripe billing, Vercel deploy, RLS hardening.
 
-- **Abstract corpus** (`scripts/ingest.ts`): pull abstracts from Semantic Scholar and arXiv (starting with CS / EE / biomedical), batch-upsert into Pinecone with rate-limit backoff, starting around 5K–10K abstracts and scaling toward ~50K once the scoring quality is validated.
-- **Uniqueness engine** (`lib/uniqueness/`): the MVP centerpiece — a textarea for the idea, a score gauge, neighbor-paper cards, and an overlap-vs-novel breakdown, backed by a server action that runs the Pinecone search and a Groq/LangChain call for structured explanation (`overlaps`, `novelAspects`, `plagiarismRisk`, `suggestion`).
-- **Conference matching** (`lib/conferences/`): a seeded venue list (NeurIPS, ICSE, ICCV, IEEE Access, COMPSAS, SAI, …) ranked by topic similarity, student level, and timeline, shown as a filterable card grid with a fallback path.
-- **Outline builder**: venue-specific outline generation once a conference is chosen.
-- **Section coaching**: structured, reviewer-style feedback per section, including a missing-citation finder.
-- **Submission readiness**: a checklist scored against the chosen venue's actual requirements.
-- **Deadline reminders**: a scheduled check against tracked conference deadlines, delivered via Composio-connected tools (Gmail/Calendar).
-- **Composio integrations**: beyond deadline reminders, wiring up Gmail, Google Drive, and other third-party tools as more features need them.
-- **Polish & deploy**: the full tabbed dashboard UI, Stripe billing for pro tiers, deploy on Vercel, RLS hardening.
+*(Optional)* Bulk abstract corpus + Pinecone index (`scripts/ingest.ts`) if you want offline retrieval alongside live search.
 
 ---
 
@@ -195,9 +197,9 @@ Roughly in build order, since each depends on the previous one having real data 
 
 | Risk | Mitigation |
 |------|------------|
-| Corpus quality drives score quality | Bias ingest toward your field (CS) first |
-| Semantic Scholar / arXiv rate limits | Batch + backoff in `ingest.ts` |
-| Cost at larger scale | Start with 5K–10K abstracts; Groq + Pinecone free/low tiers cover the MVP |
+| Live API rate limits (arXiv / Semantic Scholar) | Soft-fail per source; optional S2 API key; empty-corpus caveat UI |
+| Embedding / Groq outages | Deterministic score still returns; explanation degrades gracefully |
+| Score quality vs a curated corpus | Live search is broader but noisier; optional bulk ingest remains available later |
 | Draft PDFs | Deferred — store section text in Postgres until Storage is needed |
 
 ## License

@@ -45,6 +45,14 @@ export const env = {
   get supabaseServiceRoleKey() {
     return getEnv("SUPABASE_SERVICE_ROLE_KEY");
   },
+  /** Optional — keyless Semantic Scholar works; a free key raises rate limits. */
+  get semanticScholarApiKey(): string | undefined {
+    const value = process.env.SEMANTIC_SCHOLAR_API_KEY;
+    if (!value || value.includes("your-") || value.includes("here")) {
+      return undefined;
+    }
+    return value;
+  },
 };
 
 /** Client-safe Supabase config (NEXT_PUBLIC_* vars). */

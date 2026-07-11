@@ -10,26 +10,30 @@ flowchart LR
         UI[Next.js App Router UI]
     end
 
-    subgraph Vercel/Node["Next.js server"]
+    subgraph VercelNode["Next.js server"]
         MW[middleware.ts]
-        RSC[Server Components / Route Handlers]
+        RSC[Server Components / Actions / Route Handlers]
     end
 
     subgraph Supabase
-        Auth[Auth - Google OAuth planned, email/password live]
+        Auth[Auth - email/password live, Google OAuth planned]
         PG[(Postgres: profiles, paper_sessions, score_attempts)]
     end
 
-    Pinecone[(Pinecone - integrated embedding index)]
+    Arxiv[arXiv API]
+    S2[Semantic Scholar API]
+    PineconeEmbed[Pinecone inference.embed]
     Groq[Groq via LangChain]
-    Composio["Composio (planned) - Gmail, Calendar, Drive, etc."]
+    Composio["Composio (planned)"]
 
     UI <--> MW
     MW <--> RSC
     RSC <--> Auth
     RSC <--> PG
-    RSC <--> Pinecone
-    RSC <--> Groq
+    RSC --> Arxiv
+    RSC --> S2
+    RSC --> PineconeEmbed
+    RSC --> Groq
     RSC -.-> Composio
 ```
 
@@ -44,16 +48,17 @@ app/
   signup/page.tsx          Email/password sign-up
   auth/callback/route.ts   Google OAuth code exchange (route not yet reachable — Google sign-in is disabled)
   auth/confirm/route.ts    Email confirmation link handler (supabase.auth.verifyOtp)
-  dashboard/page.tsx       Protected shell — redirects to /login if unauthenticated
+  dashboard/page.tsx       Protected stage map — uniqueness card links to /dashboard/uniqueness
+  dashboard/uniqueness/    Uniqueness scoring page + scoreIdea server action
   layout.tsx               Root layout: font, dark mode, metadata
   globals.css              Tailwind + CSS variable theme (see Design system below)
 
 components/
-  ui/                      Design-system primitives (Button, Card, Badge, Input, Label) — shadcn-style,
-                            ported to Tailwind v3 (see Design system)
+  ui/                      Design-system primitives (Button, Card, Badge, Input, Label, Textarea)
   marketing/                Landing-page sections (Hero, Problem, HowItWorks, Pricing, Faq, etc.)
-  auth/                     AuthProvider (client context), SignInForm, SignUpForm, GoogleSignInButton
+  auth/                     AuthProvider, SignInForm, SignUpForm, GoogleSignInButton
                             (disabled — coming soon), SignOutButton
+  uniqueness/               UniquenessForm (client) — idea textarea, score, neighbors, explanation
 
 lib/
   env.ts                   Server-side env validation + client-safe Supabase config
@@ -63,7 +68,7 @@ lib/
     server.ts                Server Supabase client (Server Components/Actions/Route Handlers)
     admin.ts                 Service-role client — bypasses RLS, server-only
   llm/client.ts             LangChain ChatGroq factory — the only place ChatGroq should be instantiated
-  uniqueness/               Scoring engine — not yet implemented (Phase 3 in the README's "What's next")
+  uniqueness/               Live literature search + standalone embed + score + explain
   conferences/              Venue matching — not yet implemented
 
 middleware.ts               Refreshes the Supabase session cookie every request; redirects unauthenticated
@@ -72,12 +77,11 @@ middleware.ts               Refreshes the Supabase session cookie every request;
 supabase/migrations/        Postgres schema + RLS (001_init.sql)
 
 scripts/
-  create-pinecone-index.ts  Creates the integrated-embedding Pinecone index (llama-text-embed-v2, 1024-dim)
-  ingest.ts                 Corpus ingestion — not yet implemented (Phase 2)
+  create-pinecone-index.ts  Optional integrated-embedding Pinecone index (unused by uniqueness scoring)
+  ingest.ts                 Optional corpus ingestion — not used by the live-search uniqueness path
 
 UI-Reference/                A separate, gitignored Next.js project used only as a visual/structural design
-                              reference (its own copy of package.json, components, etc.) — not part of the
-                              ScholarPath app and never imported from it.
+                              reference — not part of the ScholarPath app and never imported from it.
 ```
 
 ## Rendering model
@@ -88,7 +92,8 @@ Every route that touches auth state is a **dynamic** Server Component (Next.js o
 |---|---|---|
 | `/` | Server Component | Reads `auth.getUser()`; Hero/Nav CTA and footer links adapt to signed-in state |
 | `/login`, `/signup` | Server Component + Client form | Redirects to `/dashboard` if already signed in; the form itself (`SignInForm`/`SignUpForm`) is a Client Component calling `lib/supabase/client.ts` directly |
-| `/dashboard` | Server Component | Redirects to `/login` if unauthenticated; wraps children in `AuthProvider` for future client-side auth state needs |
+| `/dashboard` | Server Component | Redirects to `/login` if unauthenticated; stage map with uniqueness linked |
+| `/dashboard/uniqueness` | Server Component + Client form | Auth-gated uniqueness scoring UI; `scoreIdea` server action |
 | `/auth/callback`, `/auth/confirm` | Route Handlers | No UI — exchange a code/token for a session, then redirect |
 | `middleware.ts` | Edge middleware | Runs before every non-static request; keeps the session cookie fresh and gates `/dashboard/*` |
 
@@ -131,9 +136,33 @@ Defined in `supabase/migrations/001_init.sql`:
 
 All three tables have RLS enabled with `auth.uid() = user_id` (or `= id` for `profiles`) policies — a user can only ever see or write their own rows. There is no service-role bypass anywhere in application code except `lib/supabase/admin.ts`, which nothing currently calls.
 
-## Vector search (Pinecone)
+## Pipeline stages (dashboard)
 
-The index is created via `scripts/create-pinecone-index.ts` using **integrated inference** (`createIndexForModel`, model `llama-text-embed-v2`, 1024 dimensions, cosine metric, field map `text`) — Pinecone embeds text server-side, so there's no separate embedding step or provider to manage. Once `scripts/ingest.ts` is implemented (Phase 2), it will upsert `{ text: abstract, title, year, url, ... }` records directly; the eventual uniqueness-scoring server action will call Pinecone's search API with the raw idea text and let Pinecone embed the query too.
+After uniqueness scoring, sessions carry forward through:
+
+| Route | Role |
+|---|---|
+| `/dashboard/conferences` | Embed idea vs seeded venues; Groq primary/fallback path; save `selected_venue` |
+| `/dashboard/outline` | Venue-specific outline via Groq → `outline` |
+| `/dashboard/coaching` | Section critique + live citation candidates → append `section_feedback` |
+| `/dashboard/readiness` | Venue checklist + readiness score → `readiness` |
+| `/dashboard/deadlines` | In-app countdown milestones (Composio email/calendar still planned) |
+
+Run [`supabase/migrations/002_pipeline.sql`](supabase/migrations/002_pipeline.sql) to add the JSONB columns these stages write.
+
+## Uniqueness scoring (live search + standalone embed)
+
+Pipeline: idea text → search arXiv + Semantic Scholar in parallel → batch-embed idea + candidates via `pc.inference.embed()` (`llama-text-embed-v2`, `inputType: "passage"`) → cosine similarity + `score = 100 − avg(top-5) × 100` in app code → Groq structured explanation → persist `paper_sessions` / `score_attempts`.
+
+- Search and scoring live under `lib/uniqueness/` (`search.ts`, `embed.ts`, `score.ts`, `explain.ts`).
+- The server action is `app/dashboard/uniqueness/actions.ts` (`scoreIdea`) — returns `{ ok, data } | { ok, error }`, never throws for expected failures.
+- Empty search results yield score `100` with `corpusEmpty: true` and a cautious canned explanation (no Groq call).
+- Groq failures degrade the explanation only (`explanationDegraded: true`); the numeric score still returns.
+- Optional `SEMANTIC_SCHOLAR_API_KEY` via `env.semanticScholarApiKey` — keyless works; a free key improves rate limits.
+
+## Vector search (Pinecone) — optional index path
+
+`scripts/create-pinecone-index.ts` and `scripts/ingest.ts` still exist for an optional future corpus/index workflow, but **uniqueness scoring does not use them**. Standalone `inference.embed()` only needs `PINECONE_API_KEY`.
 
 ## LLM calls (Groq via LangChain)
 

@@ -8,7 +8,8 @@ ScholarPath is an AI research co-pilot for students — uniqueness scoring, conf
 
 ```
 2-sentence idea
-    → Pinecone integrated embed + nearest-neighbor search
+    → live search: arXiv + Semantic Scholar
+    → Pinecone standalone embed (llama-text-embed-v2) on idea + candidates
     → uniquenessScore = 100 − avg(top-5 cosine similarity) × 100
     → Groq (via LangChain) explains overlap vs novelty
     → student iterates
@@ -17,7 +18,7 @@ ScholarPath is an AI research co-pilot for students — uniqueness scoring, conf
 
 Score buckets: `≥70` green (publish-worthy) · `40–69` yellow · `<40` red (too close — iterate).
 
-The app is Next.js 14 (App Router) with Supabase for auth/Postgres, Pinecone (integrated embeddings) for similarity search, and Groq (via LangChain) for explanations/coaching. Phase 0 (setup) and the Phase 1 auth shell (Google sign-in, protected dashboard, middleware guard) are done; the tabbed dashboard UI and Phases 2+ (ingest, uniqueness scoring, conference matching, etc.) are still ahead.
+The app is Next.js 14 (App Router) with Supabase for auth/Postgres, Pinecone standalone embeddings for idea-vs-abstract similarity, live arXiv/Semantic Scholar search, and Groq (via LangChain) for explanations/coaching/outline/readiness. The early pipeline is shipped: uniqueness → conferences → outline → coaching → readiness → in-app deadlines.
 
 ## Commands
 
@@ -41,8 +42,9 @@ There is no test runner configured in this repo yet (no Jest/Vitest).
 Copy `.env.example` to `.env.local` and fill in real keys:
 
 - **Groq** — chat/explanations/coaching (`GROQ_API_KEY`, `GROQ_MODEL`)
-- **Pinecone** — integrated-embedding index over paper abstracts (`PINECONE_API_KEY`, `PINECONE_INDEX`, `PINECONE_HOST`). The index must use model `llama-text-embed-v2`, dimension `1024`, metric `cosine`, field map `text` — `scripts/create-pinecone-index.ts` creates it with these settings via `createIndexForModel`.
-- **Supabase** — Google Auth + Postgres (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). Run `supabase/migrations/001_init.sql` against the project before testing auth end-to-end, and enable the Google provider (Authentication → Providers → Google) with redirect URL `http://localhost:3000/auth/callback`.
+- **Pinecone** — standalone embedding for uniqueness (`PINECONE_API_KEY`). `PINECONE_INDEX` / `PINECONE_HOST` remain required by `lib/env.ts` for the optional index scripts but are unused by uniqueness scoring.
+- **Supabase** — Auth + Postgres (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). Run `supabase/migrations/001_init.sql` before testing auth/scoring end-to-end.
+- **Semantic Scholar** (optional) — `SEMANTIC_SCHOLAR_API_KEY`; keyless works, a free key improves rate limits.
 
 `.env.local` (and any file matching `.env*`) is gitignored — never commit real keys. `.env.example` must stay placeholder-only and is intentionally tracked so `cp .env.example .env.local` works for a fresh clone.
 
@@ -53,23 +55,16 @@ Copy `.env.example` to `.env.local` and fill in real keys:
 - `app/page.tsx` — landing page; links to `/dashboard` if already signed in, else `/login`.
 - `app/login/page.tsx` — Google sign-in (redirects to `/dashboard` if already authenticated).
 - `app/auth/callback/route.ts` — exchanges the Supabase OAuth `code` for a session, then redirects.
-- `app/dashboard/page.tsx` — protected entry point (server-side `redirect("/login")` if unauthenticated); currently a basic shell, not yet the full tabbed UI (Overview · Phases · Conferences · Uniqueness · Tech stack).
-- `middleware.ts` — refreshes the Supabase session cookie on every request and redirects unauthenticated requests to `/dashboard/*` back to `/login`. Route matching is config-driven (`PROTECTED_PREFIXES`), not per-route checks.
-- `lib/supabase/client.ts` — browser client (`createBrowserClient`), for Client Components only.
-- `lib/supabase/server.ts` — server client (`createServerClient` + `next/headers` cookies), for Server Components/Actions/Route Handlers. Next 14's `cookies()` is synchronous — don't `await` it here.
-- `lib/supabase/admin.ts` — service-role client (`createAdminClient`) that bypasses RLS. Server-only; never import into a Client Component.
-- `components/auth/` — `AuthProvider` (client context wrapping Supabase auth state, seeded from a server-fetched `initialUser`), `GoogleSignInButton`, `SignOutButton`.
-- `lib/env.ts` — server-side env validation and the client-safe Supabase config (see above).
-- `lib/llm/client.ts` — LangChain chat model factory (`createChatModel`) wrapping `ChatGroq`, configured from `lib/env.ts`. This is the intended entry point for any LLM call in the app — don't instantiate `ChatGroq` directly elsewhere.
-- `lib/uniqueness/` — scoring engine, stub until Phase 3 (`score.ts`, `explain.ts` per the README's plan).
-- `lib/conferences/` — venue matching, stub until Phase 4.
-- `scripts/create-pinecone-index.ts` — idempotent (checks for an existing index by name before creating); uses `createIndexForModel` for integrated embedding, not a raw-vector index.
-- `scripts/ingest.ts` — corpus ingestion into Pinecone (Semantic Scholar + arXiv), stub until Phase 2.
-- `supabase/migrations/001_init.sql` — `profiles` (auto-created via an `on_auth_user_created` trigger), `paper_sessions`, `score_attempts`, all with RLS restricting rows to their owning user.
-- `components/ui/` — shared UI primitives, currently empty.
-- Path alias `@/*` resolves to the repo root (`tsconfig.json`).
-- Dark mode is forced at the root (`<html className="dark">`); theme tokens live in `app/globals.css` as CSS variables (`--background`, `--foreground`, `--card`, `--muted`, `--accent`).
+- `app/dashboard/layout.tsx` — auth gate, AuthProvider, pipeline nav, sign out.
+- `app/dashboard/page.tsx` — stage overview cards (all live).
+- `app/dashboard/uniqueness|conferences|outline|coaching|readiness|deadlines/` — module pages + server actions.
+- `lib/uniqueness/` — live search, embed, score, explain.
+- `lib/conferences/` — seeded venues + embedding match + Groq path suggestion.
+- `lib/outline/`, `lib/coaching/`, `lib/readiness/` — Groq-backed stage engines.
+- `lib/sessions.ts` — session list/load/update helpers.
+- `supabase/migrations/001_init.sql` + `002_pipeline.sql` — base tables + pipeline JSONB columns.
+- Google OAuth button calls `signInWithOAuth` (enable Google provider in Supabase to use it).
 
 ## Phase roadmap (per README)
 
-0 Project setup (done) · 1 Auth + app shell (Google sign-in, protected dashboard, middleware guard — done; full 5-tab dashboard UI still to build) · 2 Abstract corpus + Pinecone ingest · 3 Uniqueness engine (MVP centerpiece) · 4 Conference matching · 5 Outline builder · 6 Section coaching · 7 Submission readiness · 8 Deadline reminders · 9 Polish/billing/deploy.
+0 Setup · 1 Auth shell · 2/3 Uniqueness (live search) · 4–7 Conference/outline/coaching/readiness · in-app deadlines — **done**. Later: Composio delivery, Stripe, deploy polish.

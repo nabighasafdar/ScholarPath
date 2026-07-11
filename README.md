@@ -1,8 +1,20 @@
 # ScholarPath
 
-AI research co-pilot for students — uniqueness scoring, conference matching, outline building, section coaching, and submission readiness checks.
+An AI research co-pilot that walks a student from a raw research idea to a submitted paper — uniqueness scoring, conference matching, outline building, section coaching, and submission readiness checks, all in one place.
 
-Paste a 2-sentence research idea → get a uniqueness score against real papers → iterate until the idea is publish-worthy → match conferences → build an outline → coach sections → check readiness.
+## What we're building
+
+Students and early-career researchers (especially undergrads doing a Final Year Project or first-time authors) run into the same wall over and over: they have an idea, but no way to tell if it's actually novel, no idea which venue would realistically accept it, and no structured help turning it into a submittable paper. Advisors are stretched thin, and generic AI chat tools don't know the literature or the submission process. ScholarPath is a focused tool for that exact gap — not a general writing assistant, a pipeline that mirrors how a paper actually gets from idea to submission:
+
+1. **Uniqueness scoring** — paste a 2-sentence research idea and get a score against real published abstracts, with a plain-language explanation of what overlaps with existing work and what's actually novel. This is the entry point: if the idea isn't unique enough, nothing downstream matters yet.
+2. **Iteration loop** — refine the idea based on the explanation and re-score, until it clears a publish-worthy threshold. The tool is deliberately built around iterate-then-advance, not a one-shot verdict.
+3. **Conference matching** — once the idea is solid, match it against a seeded set of venues (tier, field, acceptance rate, deadline, difficulty) ranked by topic fit, student level, and timeline — including a realistic fallback path (e.g. "aim for X, fall back to Y if rejected") rather than only listing aspirational top-tier venues.
+4. **Outline building** — generate a venue-specific outline (sections, page limits, citation style) plus suggested datasets, baselines, and metrics to target, editable and saved against the student's session.
+5. **Section-by-section coaching** — paste a section draft (abstract, related work, methodology, …) and get structured, reviewer-style feedback: weaknesses, a missing-citation finder backed by the same paper corpus, and concrete suggestions. This is coaching, not ghostwriting — it critiques, it doesn't rewrite for you.
+6. **Submission readiness check** — a checklist run against the chosen venue's actual requirements (formatting, word count, captions, references, a clearly stated contribution) that produces a readiness score and a tickable checklist before the student submits.
+7. **Deadline tracking** — once a venue is chosen, the tool watches its deadline and reminds the student at meaningful intervals so the previous six steps don't happen too late to matter.
+
+The throughline is that every stage feeds the next: the idea's uniqueness score and iteration history follow the student into conference matching, the chosen venue shapes the outline, the outline shapes what coaching looks for, and readiness checks are scored against that same venue.
 
 ## How it works
 
@@ -29,20 +41,13 @@ Paste a 2-sentence research idea → get a uniqueness score against real papers 
 
 Paper drafts are stored as text in Postgres (no file Storage required for MVP).
 
-## Current status
+## Status
 
-| Phase | Goal | Status |
-|-------|------|--------|
-| **0** | Project setup, env, Pinecone + Supabase | Done (keys + migration are your responsibility) |
-| **1** | Auth + app shell (Google sign-in, protected dashboard) | In progress — login, callback, middleware, basic dashboard |
-| **2** | Abstract corpus + Pinecone ingest | Stub (`npm run ingest`) |
-| **3** | Uniqueness engine (MVP centerpiece) | Planned |
-| **4** | Conference matching | Planned |
-| **5** | Outline builder | Planned |
-| **6** | Section-by-section coaching | Planned |
-| **7** | Submission readiness check | Planned |
-| **8** | Deadline reminders | Planned |
-| **9** | Polish, billing, deploy | Planned |
+**Built:** project scaffold and env validation; Google sign-in via Supabase (login page, OAuth callback, session-refreshing middleware, protected dashboard route); the Postgres schema and RLS policies for profiles/sessions/scores; the Pinecone integrated-embedding index setup script; the Groq/LangChain client used for all model calls.
+
+**In progress:** the full tabbed dashboard UI (Overview · Phases · Conferences · Uniqueness · Tech stack) — right now `/dashboard` is a placeholder shell, not the real product surface.
+
+**Not started yet:** abstract corpus ingestion, the uniqueness scoring engine (the MVP centerpiece), conference matching, outline building, section coaching, submission readiness checks, deadline reminders, and billing/deploy polish. `lib/uniqueness/` and `lib/conferences/` are empty stubs; `scripts/ingest.ts` is a no-op placeholder.
 
 ---
 
@@ -83,7 +88,7 @@ Create a **Serverless** index with integrated embedding:
 | Metric | `cosine` |
 | Field map | `text` |
 
-Copy the API key and index host into `.env.local`:
+`npm run create-index` does this for you (see [Scripts](#scripts) below). Copy the API key and index host into `.env.local`:
 
 ```bash
 PINECONE_API_KEY=pcsk_...
@@ -125,8 +130,8 @@ Open [http://localhost:3000](http://localhost:3000) → **Sign in** → Google O
 | `npm run dev` | Start development server |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
-| `npm run create-index` | Helper to create / verify the Pinecone index |
-| `npm run ingest` | Ingest paper abstracts into Pinecone (Phase 2) |
+| `npm run create-index` | Create/verify the Pinecone integrated-embedding index |
+| `npm run ingest` | Ingest paper abstracts into Pinecone (not yet implemented) |
 
 ---
 
@@ -137,18 +142,18 @@ app/
   page.tsx                 # Landing → login / dashboard
   login/page.tsx           # Google sign-in
   auth/callback/route.ts   # OAuth code exchange
-  dashboard/page.tsx       # Protected shell entry
+  dashboard/page.tsx       # Protected shell entry (placeholder, not the real UI yet)
 components/
   auth/                    # AuthProvider, GoogleSignInButton, SignOutButton
 lib/
   env.ts                   # Server-side env validation
   supabase/                # Browser, server, and admin clients
   llm/                     # Groq / LangChain helpers
-  uniqueness/              # Scoring + explanation (Phase 3)
-  conferences/             # Venue matching (Phase 4)
+  uniqueness/              # Scoring + explanation engine (not yet implemented)
+  conferences/             # Venue matching (not yet implemented)
 supabase/migrations/       # Postgres schema + RLS
 scripts/
-  ingest.ts                # Corpus ingestion (Phase 2)
+  ingest.ts                # Corpus ingestion (not yet implemented)
   create-pinecone-index.ts
 middleware.ts              # Session refresh + route protection
 ```
@@ -157,66 +162,24 @@ middleware.ts              # Session refresh + route protection
 
 - **`profiles`** — 1:1 with `auth.users` (email, display name); auto-created on signup
 - **`paper_sessions`** — per-user research workspace (`idea_text`, `uniqueness_score`, status)
-- **`score_attempts`** — history of uniqueness scores for a session (Phase 3)
+- **`score_attempts`** — history of uniqueness scores for a session
 
 RLS: users can only read/write their own rows.
 
 ---
 
-## Build roadmap
+## What's next
 
-### Phase 0 — Project setup
+Roughly in build order, since each depends on the previous one having real data or a working session model to attach to:
 
-Scaffold, env validation, Groq + Pinecone + Supabase wiring. **Done on the code side**; you supply keys and run the SQL migration.
-
-### Phase 1 — Auth + app shell
-
-Google sign-in, protected routes, tabbed dashboard (Overview · Phases · Conferences · Uniqueness · Tech stack), session bootstrap in Postgres.
-
-**Done so far:** login page, OAuth callback, middleware guard, AuthProvider, basic dashboard.  
-**Still to do:** full 5-tab shell matching product UI, richer session helpers.
-
-### Phase 2 — Abstract corpus + Pinecone index
-
-`scripts/ingest.ts`:
-
-- Pull abstracts from Semantic Scholar and arXiv (CS / EE / biomedical)
-- Start with ~5K–10K to validate; scale toward ~50K
-- Batch upsert (100 at a time) with checkpoints and rate-limit backoff
-- Query test: sample idea → sensible nearest neighbors
-
-### Phase 3 — Uniqueness engine (MVP centerpiece)
-
-Ship this fully before other features.
-
-- UI: textarea for a 2-sentence idea → score gauge, neighbor paper cards, overlap-vs-novel breakdown
-- Server action → `lib/uniqueness/score.ts`: Pinecone integrated search (top 20), score from top-5 similarity
-- `lib/uniqueness/explain.ts`: LangChain + Groq structured output (`overlaps`, `novelAspects`, `plagiarismRisk`, `suggestion`)
-- Persist each attempt under the paper session
-
-### Phase 4 — Conference matching
-
-Seed venues (NeurIPS, ICSE, ICCV, IEEE Access, COMPSAS, SAI, …) with tier, field, acceptance rate, deadline, level fit. Rank by topic similarity + student level + timeline; show filterable card grid and a fallback path (“aim for COMPSAS, then IEEE Access if rejected”).
-
-### Phase 5 — Outline builder
-
-After topic + conference are set, generate a venue-specific outline (sections, page limit, citation style) plus suggested datasets, baselines, and metrics. Editable and saved on the session.
-
-### Phase 6 — Section coaching
-
-Paste abstract / related work / methodology → structured feedback (weaknesses, missing-citation finder via Pinecone + Semantic Scholar, reviewer-style comments). Coaching, not rewriting.
-
-### Phase 7 — Submission readiness
-
-Checklist agent vs chosen venue (formatting, word count, captions, references, clear contribution) → readiness score + tickable checklist.
-
-### Phase 8 — Deadline reminders
-
-Scheduled job checks conference deadlines daily; remind at 30 / 14 / 3 days (email or push).
-
-### Phase 9 — Polish, billing, deploy
-
-Tighten UI/UX, Stripe for pro tiers (gate re-scores / coaching volume), deploy on Vercel, lock down RLS, optional file Storage later if needed.
+- **Abstract corpus** (`scripts/ingest.ts`): pull abstracts from Semantic Scholar and arXiv (starting with CS / EE / biomedical), batch-upsert into Pinecone with rate-limit backoff, starting around 5K–10K abstracts and scaling toward ~50K once the scoring quality is validated.
+- **Uniqueness engine** (`lib/uniqueness/`): the MVP centerpiece — a textarea for the idea, a score gauge, neighbor-paper cards, and an overlap-vs-novel breakdown, backed by a server action that runs the Pinecone search and a Groq/LangChain call for structured explanation (`overlaps`, `novelAspects`, `plagiarismRisk`, `suggestion`).
+- **Conference matching** (`lib/conferences/`): a seeded venue list (NeurIPS, ICSE, ICCV, IEEE Access, COMPSAS, SAI, …) ranked by topic similarity, student level, and timeline, shown as a filterable card grid with a fallback path.
+- **Outline builder**: venue-specific outline generation once a conference is chosen.
+- **Section coaching**: structured, reviewer-style feedback per section, including a missing-citation finder.
+- **Submission readiness**: a checklist scored against the chosen venue's actual requirements.
+- **Deadline reminders**: a scheduled check against tracked conference deadlines.
+- **Polish & deploy**: the full tabbed dashboard UI, Stripe billing for pro tiers, deploy on Vercel, RLS hardening.
 
 ---
 
@@ -232,7 +195,7 @@ Tighten UI/UX, Stripe for pro tiers (gate re-scores / coaching volume), deploy o
 |------|------------|
 | Corpus quality drives score quality | Bias ingest toward your field (CS) first |
 | Semantic Scholar / arXiv rate limits | Batch + backoff in `ingest.ts` |
-| Cost at larger scale | Start 5K–10K abstracts; Groq + Pinecone free/low tiers for MVP |
+| Cost at larger scale | Start with 5K–10K abstracts; Groq + Pinecone free/low tiers cover the MVP |
 | Draft PDFs | Deferred — store section text in Postgres until Storage is needed |
 
 ## License

@@ -7,9 +7,17 @@ import { assessReadiness, type ReadinessReport } from "@/lib/readiness/assess";
 import type { ConferenceVenue } from "@/lib/conferences/venues";
 import type { PaperOutline } from "@/lib/outline/generate";
 
+const DRAFT_NOTES_MAX = 12_000;
+
 const inputSchema = z.object({
-  sessionId: z.string().uuid(),
-  draftNotes: z.string().max(4000).optional(),
+  sessionId: z.string().uuid({ message: "Pick a paper session before running readiness." }),
+  draftNotes: z
+    .string()
+    .max(
+      DRAFT_NOTES_MAX,
+      `Draft notes are too long (max ${DRAFT_NOTES_MAX.toLocaleString()} characters). Paste a short status summary, not the full paper.`
+    )
+    .optional(),
 });
 
 export type RunReadinessData = {
@@ -25,9 +33,13 @@ export async function runReadinessCheck(input: {
 }): Promise<ActionResult<RunReadinessData>> {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
+    const issue = parsed.error.issues[0];
     return {
       ok: false,
-      error: { code: "validation_error", message: parsed.error.issues[0]?.message ?? "Invalid input." },
+      error: {
+        code: "validation_error",
+        message: issue?.message ?? "Invalid input.",
+      },
     };
   }
 

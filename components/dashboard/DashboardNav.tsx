@@ -12,6 +12,7 @@ const NAV = [
   { href: "/dashboard/coaching", label: "Coaching" },
   { href: "/dashboard/readiness", label: "Readiness" },
   { href: "/dashboard/deadlines", label: "Deadlines" },
+  { href: "/dashboard/settings", label: "Settings" },
 ];
 
 export function DashboardNav() {

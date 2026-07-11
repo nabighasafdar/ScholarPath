@@ -107,6 +107,10 @@ export function ReadinessForm({
           placeholder="e.g. Abstract + method drafted; experiments incomplete; figures missing captions…"
           disabled={isPending}
         />
+        <p className="text-xs text-muted-foreground">
+          Status summary only (not the full paper). {draftNotes.length.toLocaleString()} / 12,000
+          characters.
+        </p>
       </div>
       <Button onClick={run} disabled={isPending || !sessionId}>
         {isPending ? "Checking…" : result ? "Re-run readiness check" : "Run readiness check"}

@@ -23,7 +23,11 @@ export function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setError(error.message);
+      const message =
+        /invalid api key/i.test(error.message)
+          ? "Invalid Supabase API key. In Vercel → Settings → Environment Variables, set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to the values from Supabase → Project Settings → API Keys (use the anon or publishable key, not the service_role/secret key), then Redeploy."
+          : error.message;
+      setError(message);
       setLoading(false);
       return;
     }

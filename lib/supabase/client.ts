@@ -1,7 +1,8 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { supabaseClientConfig } from "@/lib/env";
+import { assertSupabaseBrowserConfig } from "@/lib/env";
 
 /** Browser-side Supabase client — safe to use in Client Components. */
 export function createClient() {
-  return createBrowserClient(supabaseClientConfig.url, supabaseClientConfig.anonKey);
+  const { url, anonKey } = assertSupabaseBrowserConfig();
+  return createBrowserClient(url, anonKey);
 }

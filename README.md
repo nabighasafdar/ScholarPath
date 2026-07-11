@@ -38,6 +38,7 @@ The throughline is that every stage feeds the next: the idea's uniqueness score 
 | **LangChain** + **Groq** (`llama-3.3-70b-versatile`) | Scoring explanations, coaching, checklists |
 | **Pinecone** | Vector DB over paper abstracts — integrated embedding (`llama-text-embed-v2`, 1024-dim, cosine, field map `text`) |
 | **Semantic Scholar + arXiv APIs** | Free, key-less sources for the abstract corpus |
+| **Composio** *(planned)* | Tool-integration layer for connecting third-party services (Google Calendar, Gmail, Drive, and more over time) — starting with deadline reminders, expanding as new features need external tools |
 
 Paper drafts are stored as text in Postgres (no file Storage required for MVP).
 
@@ -178,7 +179,8 @@ Roughly in build order, since each depends on the previous one having real data 
 - **Outline builder**: venue-specific outline generation once a conference is chosen.
 - **Section coaching**: structured, reviewer-style feedback per section, including a missing-citation finder.
 - **Submission readiness**: a checklist scored against the chosen venue's actual requirements.
-- **Deadline reminders**: a scheduled check against tracked conference deadlines.
+- **Deadline reminders**: a scheduled check against tracked conference deadlines, delivered via Composio-connected tools (Gmail/Calendar).
+- **Composio integrations**: beyond deadline reminders, wiring up Gmail, Google Drive, and other third-party tools as more features need them.
 - **Polish & deploy**: the full tabbed dashboard UI, Stripe billing for pro tiers, deploy on Vercel, RLS hardening.
 
 ---

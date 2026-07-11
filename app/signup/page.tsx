@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { SignInForm } from "@/components/auth/SignInForm";
+import { SignUpForm } from "@/components/auth/SignUpForm";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
-export default async function LoginPage() {
+export default async function SignUpPage() {
   const supabase = createClient();
   const {
     data: { user },
@@ -25,18 +25,18 @@ export default async function LoginPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Sign in to ScholarPath
+              Create your account
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-foreground underline underline-offset-4">
-                Sign up
+              Already have an account?{" "}
+              <Link href="/login" className="text-foreground underline underline-offset-4">
+                Sign in
               </Link>
             </p>
           </div>
         </div>
 
-        <SignInForm />
+        <SignUpForm />
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <div className="h-px flex-1 bg-border" />

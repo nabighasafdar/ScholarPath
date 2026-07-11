@@ -80,7 +80,7 @@ export function SignUpForm() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <Button type="submit" disabled={loading} className="w-full justify-center">
         {loading ? "Creating account…" : "Create account"}

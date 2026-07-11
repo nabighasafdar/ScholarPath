@@ -1,82 +1,107 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getDashboardStats } from "@/lib/dashboard/stats";
+import { getUpcomingDeadlines } from "@/lib/conferences/upcoming";
+import { FALLBACK_TOPICS } from "@/lib/dashboard/topicSuggestions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Target,
-  Landmark,
-  ListTree,
-  MessagesSquare,
-  CheckCircle2,
-  CalendarClock,
-  type LucideIcon,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { StatTile } from "@/components/dashboard/StatTile";
+import { ScoreTrendChart } from "@/components/dashboard/ScoreTrendChart";
+import { PipelineProgress } from "@/components/dashboard/PipelineProgress";
+import { TopicSuggestions } from "@/components/dashboard/TopicSuggestions";
+import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
 
-const STAGES: {
-  icon: LucideIcon;
-  title: string;
-  body: string;
-  href: string;
-}[] = [
-  {
-    icon: Target,
-    title: "Uniqueness score",
-    body: "Score a research idea against real published abstracts.",
-    href: "/dashboard/uniqueness",
-  },
-  {
-    icon: Landmark,
-    title: "Conference matching",
-    body: "Get ranked venues by topic fit, level, and timeline.",
-    href: "/dashboard/conferences",
-  },
-  {
-    icon: ListTree,
-    title: "Outline builder",
-    body: "Generate a venue-specific outline once a conference is chosen.",
-    href: "/dashboard/outline",
-  },
-  {
-    icon: MessagesSquare,
-    title: "Section coaching",
-    body: "Reviewer-style feedback on your drafted sections.",
-    href: "/dashboard/coaching",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Readiness check",
-    body: "A checklist scored against your venue's requirements.",
-    href: "/dashboard/readiness",
-  },
-  {
-    icon: CalendarClock,
-    title: "Deadline tracking",
-    body: "Reminders as your chosen venue's deadline approaches.",
-    href: "/dashboard/deadlines",
-  },
-];
+function scoreTone(score: number | null): "default" | "success" | "warning" | "danger" {
+  if (score === null) return "default";
+  if (score >= 70) return "success";
+  if (score >= 40) return "warning";
+  return "danger";
+}
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const stats = await getDashboardStats(user.id);
+  const upcomingVenues = getUpcomingDeadlines(4);
+  const hasSessions = stats.totalSessions > 0;
+
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Full pipeline is live — start with uniqueness, then work through venues, outline, coaching,
-        readiness, and deadlines.
+        Full pipeline is live — start with uniqueness, then work through venues, outline,
+        coaching, readiness, and deadlines.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {STAGES.map((stage) => (
-          <Link key={stage.title} href={stage.href} className="block">
-            <Card className="h-full p-6 transition hover:border-[hsl(var(--accent))]/40">
-              <div className="flex items-center justify-between">
-                <stage.icon className="h-5 w-5 text-[hsl(var(--accent))]" />
-                <Badge>Try it</Badge>
-              </div>
-              <h2 className="mt-4 font-medium text-foreground">{stage.title}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{stage.body}</p>
-            </Card>
+      {!hasSessions ? (
+        <Card className="mt-8 flex flex-col items-start gap-4 p-8">
+          <Badge>Get started</Badge>
+          <div>
+            <h2 className="font-medium text-foreground">Score your first idea</h2>
+            <p className="mt-1 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Once you run a uniqueness score, your session count, score trend, and pipeline
+              progress will show up here.
+            </p>
+          </div>
+          <Link href="/dashboard/uniqueness" className="inline-flex">
+            <Button>Score an idea</Button>
           </Link>
-        ))}
+        </Card>
+      ) : (
+        <>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Research sessions" value={String(stats.totalSessions)} />
+            <StatTile label="Score attempts" value={String(stats.totalAttempts)} />
+            <StatTile
+              label="Average score"
+              value={stats.averageScore !== null ? String(stats.averageScore) : "—"}
+              tone={scoreTone(stats.averageScore)}
+            />
+            <StatTile
+              label="Best score"
+              value={stats.bestScore !== null ? String(stats.bestScore) : "—"}
+              hint={stats.bestScore !== null ? "out of 100" : undefined}
+              tone={scoreTone(stats.bestScore)}
+            />
+          </div>
+
+          <div className="mt-4">
+            <Card className="p-5">
+              <h2 className="text-sm font-medium text-foreground">Score attempts over time</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Dashed lines mark the publish-worthy (70) and iterate (40) thresholds.
+              </p>
+              <div className="mt-4">
+                {stats.scoreTrend.length > 1 ? (
+                  <ScoreTrendChart data={stats.scoreTrend} />
+                ) : (
+                  <p className="flex h-56 items-center justify-center text-sm text-muted-foreground">
+                    Score another idea to see a trend.
+                  </p>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          <div className="mt-4">
+            <PipelineProgress actions={stats.completedActions} />
+          </div>
+        </>
+      )}
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <TopicSuggestions initialTopics={FALLBACK_TOPICS} initialDegraded />
+        </div>
+        <div className="lg:col-span-2">
+          <UpcomingDeadlines venues={upcomingVenues} />
+        </div>
       </div>
     </div>
   );

@@ -11,8 +11,14 @@ import type { ComposioToolkit } from "@/lib/composio/connections";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { GmailLogo, GoogleCalendarLogo } from "@/components/icons/AppLogos";
 
 const POPUP_NAME = "scholarpath_composio_oauth";
+
+const TOOLKIT_LOGO: Record<ComposioToolkit, typeof GmailLogo> = {
+  gmail: GmailLogo,
+  googlecalendar: GoogleCalendarLogo,
+};
 
 export function IntegrationsPanel({ initial }: { initial: ConnectionsData }) {
   const [data, setData] = useState(initial);
@@ -103,7 +109,7 @@ export function IntegrationsPanel({ initial }: { initial: ConnectionsData }) {
           Google authorization in the popup (same flow as Hermes).
         </p>
         {!data.configured && (
-          <p className="mt-3 text-sm text-yellow-400">
+          <p className="mt-3 text-sm text-warning">
             Server is missing <code className="text-foreground">COMPOSIO_API_KEY</code>. Add it to
             the environment, then reload.
           </p>
@@ -115,25 +121,30 @@ export function IntegrationsPanel({ initial }: { initial: ConnectionsData }) {
         </p>
       </Card>
 
-      {info && <p className="text-sm text-green-400">{info}</p>}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {info && <p className="text-sm text-success">{info}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="space-y-3">
-        {data.connections.map((row) => (
+        {data.connections.map((row) => {
+          const Logo = TOOLKIT_LOGO[row.toolkit];
+          return (
           <Card key={row.toolkit} className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-medium text-foreground">{row.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {!data.configured
-                    ? "Composio API key not configured on the server"
-                    : row.connected
-                      ? "Connected and ready for deadline reminders"
-                      : "Not connected — click Connect for a Google popup"}
-                </p>
+              <div className="flex items-center gap-3">
+                <Logo className="h-9 w-9" />
+                <div>
+                  <p className="font-medium text-foreground">{row.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {!data.configured
+                      ? "Composio API key not configured on the server"
+                      : row.connected
+                        ? "Connected and ready for deadline reminders"
+                        : "Not connected — click Connect for a Google popup"}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className={row.connected ? "text-green-400" : "text-yellow-400"}>
+                <Badge className={row.connected ? "text-success" : "text-warning"}>
                   {row.connected ? "Connected" : "Not connected"}
                 </Badge>
                 {row.connected ? (
@@ -157,7 +168,8 @@ export function IntegrationsPanel({ initial }: { initial: ConnectionsData }) {
               </div>
             </div>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       <Button variant="outline" size="sm" disabled={isPending} onClick={refresh}>

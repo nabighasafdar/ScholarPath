@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function latestCoaching(
   session?: Pick<PaperSessionRow, "id" | "section_feedback"> | null
@@ -103,19 +104,22 @@ export function CoachingForm({
 
       <div className="space-y-2">
         <Label htmlFor="section">Section</Label>
-        <select
-          id="section"
-          className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+        <Select
           value={sectionType}
-          onChange={(e) => setSectionType(e.target.value as (typeof SECTION_TYPES)[number])}
+          onValueChange={(v) => setSectionType(v as (typeof SECTION_TYPES)[number])}
           disabled={isPending}
         >
-          {SECTION_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {s.replace("_", " ")}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="section">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SECTION_TYPES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s.replace("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
@@ -133,12 +137,12 @@ export function CoachingForm({
       <Button onClick={run} disabled={isPending || draft.trim().length < 40}>
         {isPending ? "Reviewing…" : "Get reviewer feedback"}
       </Button>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {result && (
         <div className="space-y-4">
           {result.degraded && (
-            <Card className="border-yellow-500/30 bg-yellow-500/5 p-4 text-sm text-yellow-100/90">
+            <Card className="border-warning/30 bg-warning/5 p-4 text-sm text-warning">
               Coaching degraded — showing a fallback critique. Citation candidates may still be useful.
             </Card>
           )}

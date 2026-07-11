@@ -51,7 +51,11 @@ async function loadLatestAttempt(
   };
 }
 
-export default async function UniquenessPage() {
+export default async function UniquenessPage({
+  searchParams,
+}: {
+  searchParams?: { idea?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -60,8 +64,9 @@ export default async function UniquenessPage() {
   // Layout already redirects, but keep a narrow guard for typing.
   if (!user) return null;
 
+  const suggestedIdea = searchParams?.idea?.trim() || null;
   const sessions = await listSessionsForUser(user.id);
-  const initialSession = sessions[0] ?? null;
+  const initialSession = suggestedIdea ? null : sessions[0] ?? null;
   const initialResult = initialSession
     ? await loadLatestAttempt(initialSession.id, user.id)
     : null;
@@ -87,7 +92,7 @@ export default async function UniquenessPage() {
       <UniquenessForm
         sessions={sessions}
         initialSessionId={initialSession?.id}
-        initialIdeaText={initialSession?.idea_text ?? ""}
+        initialIdeaText={suggestedIdea ?? initialSession?.idea_text ?? ""}
         initialResult={initialResult}
         initialAttempts={attemptRows.map((a) => ({
           id: a.id as string,

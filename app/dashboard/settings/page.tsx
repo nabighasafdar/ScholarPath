@@ -16,7 +16,7 @@ export default async function SettingsPage({
       description="Connect Gmail and Google Calendar for deadline reminders."
     >
       {searchParams?.connected ? (
-        <p className="mb-4 text-sm text-green-400">
+        <p className="mb-4 text-sm text-success">
           Authorization returned for {searchParams.connected}. Status is shown below — click Refresh
           if it still says not connected.
         </p>
@@ -24,7 +24,7 @@ export default async function SettingsPage({
       {status.ok ? (
         <IntegrationsPanel initial={status.data} />
       ) : (
-        <Card className="p-6 text-sm text-red-400">{status.error.message}</Card>
+        <Card className="p-6 text-sm text-danger">{status.error.message}</Card>
       )}
     </DashboardModuleShell>
   );

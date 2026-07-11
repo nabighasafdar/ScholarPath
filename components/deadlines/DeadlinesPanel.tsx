@@ -160,10 +160,10 @@ export function DeadlinesPanel({
             <Badge
               className={
                 remaining !== null && remaining < 0
-                  ? "text-red-400"
+                  ? "text-danger"
                   : remaining !== null && remaining <= 7
-                    ? "text-yellow-400"
-                    : "text-green-400"
+                    ? "text-warning"
+                    : "text-success"
               }
             >
               {remaining === null
@@ -206,8 +206,8 @@ export function DeadlinesPanel({
         </Card>
       )}
 
-      {info && <p className="text-sm text-green-400">{info}</p>}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {info && <p className="text-sm text-success">{info}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {scheduledReminders.length > 0 && (
         <Card className="p-4">
@@ -235,7 +235,7 @@ export function DeadlinesPanel({
                 </p>
               </div>
               {m.acknowledged ? (
-                <Badge className="text-green-400">Acknowledged</Badge>
+                <Badge className="text-success">Acknowledged</Badge>
               ) : (
                 <Button size="sm" variant="outline" disabled={isPending || !m.due} onClick={() => ack(m.id)}>
                   Mark done

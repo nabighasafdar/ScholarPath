@@ -143,15 +143,15 @@ export function OutlineForm({
           </Button>
         )}
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {message && <p className="text-sm text-green-400">{message}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {message && <p className="text-sm text-success">{message}</p>}
 
       {result && (
         <div className="space-y-4">
           <Card className="space-y-3 p-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{result.venueName}</Badge>
-              {result.degraded && <Badge className="text-yellow-400">Template fallback</Badge>}
+              {result.degraded && <Badge className="text-warning">Template fallback</Badge>}
             </div>
             <Input
               value={result.outline.titleSuggestion}

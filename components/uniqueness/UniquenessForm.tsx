@@ -17,12 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-const BUCKET_STYLES: Record<ScoreBucket, string> = {
-  green: "border-green-500/40 bg-green-500/10 text-green-400",
-  yellow: "border-yellow-500/40 bg-yellow-500/10 text-yellow-400",
-  red: "border-red-500/40 bg-red-500/10 text-red-400",
-};
+import { SCORE_BUCKET_BADGE } from "@/lib/scoreBucketStyles";
 
 const BUCKET_LABELS: Record<ScoreBucket, string> = {
   green: "Publish-worthy (≥70)",
@@ -135,7 +130,7 @@ export function UniquenessForm({
           </p>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <Button type="submit" disabled={isPending || ideaText.trim().length < 20}>
           {isPending ? "Scoring…" : sessionId ? "Re-score idea" : "Score uniqueness"}
@@ -158,7 +153,7 @@ export function UniquenessForm({
       {result && (
         <div className="space-y-6">
           {(result.corpusEmpty || result.warnings.length > 0 || result.explanationDegraded) && (
-            <Card className="border-yellow-500/30 bg-yellow-500/5 p-4 text-sm text-yellow-100/90">
+            <Card className="border-warning/30 bg-warning/5 p-4 text-sm text-warning">
               {result.corpusEmpty && (
                 <p>
                   Fully novel relative to what we retrieved — but we found no comparable published
@@ -187,7 +182,7 @@ export function UniquenessForm({
                   <span className="text-lg font-medium text-muted-foreground">/100</span>
                 </p>
               </div>
-              <Badge className={cn("px-3 py-1 text-sm", BUCKET_STYLES[result.bucket])}>
+              <Badge className={cn("px-3 py-1 text-sm", SCORE_BUCKET_BADGE[result.bucket])}>
                 {BUCKET_LABELS[result.bucket]}
               </Badge>
             </div>

@@ -95,15 +95,15 @@ export function ConferenceMatchForm({
         {isPending && !result ? "Matching…" : "Match conferences"}
       </Button>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {message && <p className="text-sm text-green-400">{message}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {message && <p className="text-sm text-success">{message}</p>}
 
       {result && (
         <div className="space-y-4">
           <Card className="p-5">
             <h2 className="font-medium text-foreground">Recommended path</h2>
             {result.metaDegraded && (
-              <p className="mt-2 text-sm text-yellow-200/90">
+              <p className="mt-2 text-sm text-warning">
                 AI path suggestion degraded — using embedding ranks with a conservative fallback.
               </p>
             )}
@@ -126,8 +126,8 @@ export function ConferenceMatchForm({
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-medium text-foreground">{venue.shortName}</h3>
                         <Badge variant="outline">{venue.tier}</Badge>
-                        {isPrimary && <Badge className="bg-green-500/15 text-green-400">Primary</Badge>}
-                        {isFallback && <Badge className="bg-yellow-500/15 text-yellow-400">Fallback</Badge>}
+                        {isPrimary && <Badge className="bg-success/15 text-success">Primary</Badge>}
+                        {isFallback && <Badge className="bg-warning/15 text-warning">Fallback</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {venue.field} · fit {Math.round(venue.topicFit * 100)}% · acceptance ≈

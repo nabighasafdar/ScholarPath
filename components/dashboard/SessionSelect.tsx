@@ -2,6 +2,7 @@
 
 import type { PaperSessionRow } from "@/lib/action-result";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function SessionSelect({
   sessions,
@@ -25,20 +26,19 @@ export function SessionSelect({
   return (
     <div className="space-y-2">
       <Label htmlFor="session">Paper session</Label>
-      <select
-        id="session"
-        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
-        value={value ?? sessions[0]?.id ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-      >
-        {sessions.map((s) => (
-          <option key={s.id} value={s.id}>
-            {(s.idea_text.slice(0, 72) || "Untitled") + (s.idea_text.length > 72 ? "…" : "")}
-            {typeof s.uniqueness_score === "number" ? ` · score ${s.uniqueness_score}` : ""}
-          </option>
-        ))}
-      </select>
+      <Select value={value ?? sessions[0]?.id ?? ""} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger id="session">
+          <SelectValue placeholder="Choose a session" />
+        </SelectTrigger>
+        <SelectContent>
+          {sessions.map((s) => (
+            <SelectItem key={s.id} value={s.id}>
+              {(s.idea_text.slice(0, 72) || "Untitled") + (s.idea_text.length > 72 ? "…" : "")}
+              {typeof s.uniqueness_score === "number" ? ` · score ${s.uniqueness_score}` : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

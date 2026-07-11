@@ -12,12 +12,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLE = {
-  pass: "text-green-400",
-  warn: "text-yellow-400",
-  fail: "text-red-400",
+  pass: "text-success",
+  warn: "text-warning",
+  fail: "text-danger",
 };
 
 function readinessFromSession(
@@ -115,7 +116,7 @@ export function ReadinessForm({
       <Button onClick={run} disabled={isPending || !sessionId}>
         {isPending ? "Checking…" : result ? "Re-run readiness check" : "Run readiness check"}
       </Button>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {result && (
         <div className="space-y-4">
@@ -125,7 +126,7 @@ export function ReadinessForm({
                 <p className="text-sm text-muted-foreground">Readiness · {result.venueName}</p>
                 <p className="text-4xl font-bold">{result.report.score}/100</p>
               </div>
-              {result.degraded && <Badge className="text-yellow-400">Degraded</Badge>}
+              {result.degraded && <Badge className="text-warning">Degraded</Badge>}
             </div>
             <p className="mt-3 text-sm text-muted-foreground">{result.report.summary}</p>
           </Card>
@@ -134,12 +135,11 @@ export function ReadinessForm({
             {result.report.checklist.map((item) => (
               <Card key={item.id} className="p-4">
                 <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     className="mt-1"
                     checked={Boolean(checked[item.id])}
-                    onChange={(e) =>
-                      setChecked((prev) => ({ ...prev, [item.id]: e.target.checked }))
+                    onCheckedChange={(v) =>
+                      setChecked((prev) => ({ ...prev, [item.id]: v === true }))
                     }
                   />
                   <span>

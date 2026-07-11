@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { SignOutButton } from "@/components/auth/SignOutButton";
-import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import { Sidebar } from "@/components/dashboard/Sidebar";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createClient();
@@ -15,20 +14,22 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("onboarding_completed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // Fail open if the column/migration isn't there yet — never lock existing users out.
+  if (!profileError && profile && !profile.onboarding_completed_at) {
+    redirect("/onboarding");
+  }
+
   return (
     <AuthProvider initialUser={user}>
-      <div className="min-h-screen px-6 py-10">
-        <div className="mx-auto max-w-5xl">
-          <header className="mb-2 flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">ScholarPath</p>
-              <p className="text-sm text-muted-foreground">Signed in as {user.email}</p>
-            </div>
-            <SignOutButton />
-          </header>
-          <DashboardNav />
-          {children}
-        </div>
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <Sidebar userEmail={user.email ?? ""} />
+        <main className="flex-1 px-6 py-8 lg:px-10 lg:py-10">{children}</main>
       </div>
     </AuthProvider>
   );

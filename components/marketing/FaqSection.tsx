@@ -37,7 +37,7 @@ export function FaqSection() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <section id="faq" className="border-b border-border py-20">
+    <section id="faq" className="border-b border-border py-16">
       <div className="mx-auto grid max-w-5xl gap-12 px-6 lg:grid-cols-2 lg:gap-16">
         <div className="flex flex-col gap-6">
           <Eyebrow>FAQ</Eyebrow>

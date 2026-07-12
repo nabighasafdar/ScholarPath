@@ -18,7 +18,7 @@ const POINTS = [
 
 export function Problem() {
   return (
-    <section className="relative border-b border-border py-20">
+    <section className="relative border-b border-border py-16">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{

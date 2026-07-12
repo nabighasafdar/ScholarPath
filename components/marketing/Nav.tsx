@@ -9,7 +9,7 @@ export function Nav({ signedIn }: { signedIn: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="relative z-50 mx-auto w-full max-w-5xl px-6 py-6">
+    <nav className="relative z-50 w-full px-6 py-6 sm:px-10 lg:px-14">
       <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-4">
         <Link href="/" className="flex items-center gap-2 text-foreground">
           <GraduationCap className="h-5 w-5 text-[hsl(var(--accent))]" />

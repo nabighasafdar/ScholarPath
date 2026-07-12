@@ -18,6 +18,19 @@ export default async function Home() {
 
   return (
     <>
+      <div
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage: "linear-gradient(to bottom, transparent, black 8%, black 80%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent, black 8%, black 80%, transparent)",
+          opacity: 0.5,
+        }}
+      />
+
       <div className="pointer-events-none fixed inset-0 z-40">
         <div className="mx-auto h-full max-w-5xl">
           <div className="relative h-full">

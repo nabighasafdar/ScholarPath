@@ -25,7 +25,7 @@ const TESTIMONIALS = [
 
 export function TestimonialsSection() {
   return (
-    <section className="border-b border-border py-20">
+    <section className="border-b border-border py-16">
       <div className="mx-auto max-w-5xl px-6">
         <div className="flex flex-col items-start gap-6">
           <Eyebrow>What students say</Eyebrow>

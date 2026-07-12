@@ -65,7 +65,7 @@ export function HowItWorks() {
   const ActiveIcon = STEPS[active].icon;
 
   return (
-    <section id="how-it-works" className="border-b border-border py-20">
+    <section id="how-it-works" className="border-b border-border py-16">
       <div className="mx-auto max-w-5xl px-6">
         <div className="flex flex-col items-start gap-6">
           <Eyebrow>How it works</Eyebrow>
@@ -163,13 +163,13 @@ export function HowItWorks() {
         <div className="mt-12 flex flex-wrap items-center gap-4 border border-border bg-card px-6 py-4 text-sm">
           <span className="text-muted-foreground">Score buckets:</span>
           <span className="inline-flex items-center gap-2 text-foreground">
-            <span className="h-2 w-2 rounded-full bg-green-400" /> ≥70 publish-worthy
+            <span className="h-2 w-2 rounded-full bg-success" /> ≥70 publish-worthy
           </span>
           <span className="inline-flex items-center gap-2 text-foreground">
-            <span className="h-2 w-2 rounded-full bg-yellow-400" /> 40–69 borderline
+            <span className="h-2 w-2 rounded-full bg-warning" /> 40–69 borderline
           </span>
           <span className="inline-flex items-center gap-2 text-foreground">
-            <span className="h-2 w-2 rounded-full bg-red-400" /> &lt;40 too close, iterate
+            <span className="h-2 w-2 rounded-full bg-danger" /> &lt;40 too close, iterate
           </span>
         </div>
       </div>

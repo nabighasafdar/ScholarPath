@@ -4,7 +4,7 @@ import { BlurText } from "@/components/marketing/BlurText";
 
 export function Cta({ signedIn }: { signedIn: boolean }) {
   return (
-    <section className="border-b border-border py-20 text-center">
+    <section className="border-b border-border py-16 text-center">
       <div className="mx-auto max-w-2xl px-6">
         <h2 className="text-balance text-3xl font-normal tracking-tight text-foreground md:text-5xl">
           <BlurText text="Start with your idea" />

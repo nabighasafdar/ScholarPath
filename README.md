@@ -266,4 +266,4 @@ RLS: users can only read/write their own rows on all three tables.
 
 ## License
 
-Private / FYP project — not licensed for public redistribution unless otherwise noted.
+FYP project — not licensed for public redistribution unless otherwise noted.

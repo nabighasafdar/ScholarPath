@@ -4,9 +4,11 @@ An AI research co-pilot that walks a student from a raw research idea to a submi
 
 ### Demo
 
-<video src="./video/scholarpath.mov" controls width="720" title="ScholarPath demo">
-  <a href="./video/scholarpath.mov">Watch the ScholarPath demo video</a>
+<video src="https://raw.githubusercontent.com/nabighasafdar/ScholarPath/main/video/scholarpath.mp4" controls width="720" title="ScholarPath demo">
+  Your browser does not support the video tag. <a href="./video/scholarpath.mp4">Download the ScholarPath demo</a>
 </video>
+
+<p><a href="./video/scholarpath.mp4">▶ Watch / download the ScholarPath demo (MP4)</a></p>
 
 <img width="1470" height="834" alt="image" src="https://github.com/user-attachments/assets/0a6d2e41-eeb9-4543-9542-52d6f8f803c3" />
 <img width="1463" height="758" alt="image" src="https://github.com/user-attachments/assets/6611c63f-72b3-4b5f-86d6-bf284c7023e5" />

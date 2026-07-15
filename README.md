@@ -6,8 +6,6 @@ An AI research co-pilot that walks a student from a raw research idea to a submi
 
 [![ScholarPath demo — click to play](https://github.com/user-attachments/assets/0a6d2e41-eeb9-4543-9542-52d6f8f803c3)](https://github.com/nabighasafdar/ScholarPath/blob/main/video/scholarpath.mp4)
 
-**[▶ Click to play the ScholarPath demo](https://github.com/nabighasafdar/ScholarPath/blob/main/video/scholarpath.mp4)** · [Direct download (MP4)](./video/scholarpath.mp4)
-
 <img width="1470" height="834" alt="image" src="https://github.com/user-attachments/assets/0a6d2e41-eeb9-4543-9542-52d6f8f803c3" />
 <img width="1463" height="758" alt="image" src="https://github.com/user-attachments/assets/6611c63f-72b3-4b5f-86d6-bf284c7023e5" />
 

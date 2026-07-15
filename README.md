@@ -1,6 +1,8 @@
 # ScholarPath
 
 An AI research co-pilot that walks a student from a raw research idea to a submitted paper — uniqueness scoring, conference matching, outline building, section coaching, submission readiness checks, and deadline reminders, all in one place.
+<img width="1470" height="834" alt="image" src="https://github.com/user-attachments/assets/0a6d2e41-eeb9-4543-9542-52d6f8f803c3" />
+<img width="1463" height="758" alt="image" src="https://github.com/user-attachments/assets/6611c63f-72b3-4b5f-86d6-bf284c7023e5" />
 
 ## What we're building
 

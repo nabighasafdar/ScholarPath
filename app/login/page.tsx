@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { expired?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -35,6 +39,12 @@ export default async function LoginPage() {
             </p>
           </div>
         </div>
+
+        {searchParams.expired === "1" && (
+          <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
+            Your session expired. Please sign in again.
+          </p>
+        )}
 
         <SignInForm />
 
